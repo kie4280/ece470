@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 We get inspirations of Tower of Hanoi algorithm from the website below.
@@ -9,6 +9,7 @@ Source: https://www.cut-the-knot.org/recurrence/hanoi.shtml
 import os
 import argparse
 import copy
+from socket import fromfd
 import time
 import rospy
 import rospkg
@@ -22,22 +23,22 @@ from lab2_header import *
 SPIN_RATE = 20
 
 # UR3 home location
-home = np.radians([188.07, -75.81, 97.58, -112.38, -90.79, 96.22])
+home = np.radians([141.35, -97.66, 104.86, -98.08, -89.79, 51.39])
 
 # Hanoi tower location 1
-Q11 = [176.03*pi/180.0, -54.97*pi/180.0, 114.74*pi/180.0, -146.99*pi/180.0, -89.56*pi/180.0, 81.2*pi/180.0]
-Q12 = [175.90*pi/180.0, -61.03*pi/180.0, 114.46*pi/180.0, -142.05*pi/180.0, -89.00*pi/180.0, 81.18*pi/180.0]
-Q13 = [176*pi/180.0, -66.78*pi/180.0, 111.99*pi/180.0, -134.17*pi/180.0, -89.77*pi/180.0, 81.19*pi/180.0]
+Q11 = [132.21*pi/180.0, -56.84*pi/180.0, 123.74*pi/180.0, -157.17*pi/180.0, -90.66*pi/180.0, 45.66*pi/180.0]
+Q12 = [132.17*pi/180.0, -65.17*pi/180.0, 122.8*pi/180.0, -147.89*pi/180.0, -90.61*pi/180.0, 45.07*pi/180.0]
+Q13 = [132.19*pi/180.0, -72.62*pi/180.0, 120.27*pi/180.0, -137.91*pi/180.0, -90.58*pi/180.0, 45.55*pi/180.0]
 
 # Hanoi tower location 2
-Q21 = [185.9*pi/180.0, -52.45*pi/180.0, 106.01*pi/180.0, -137.96*pi/180.0, -88.93*pi/180.0, 81.18*pi/180.0]
-Q22 = [185.89*pi/180.0, -57.94*pi/180.0, 108.61*pi/180.0, -139.66*pi/180.0, -88.93*pi/180.0, 81.19*pi/180.0]
-Q23 = [185.03*pi/180.0, -63.88*pi/180.0, 106.82*pi/180.0, -131.81*pi/180.0, -88.72*pi/180.0, 81.19*pi/180.0]
+Q21 = [148.54*pi/180.0, -60.03*pi/180.0, 131.00*pi/180.0, -160.97*pi/180.0, -90.73*pi/180.0, 62.00*pi/180.0]
+Q22 = [148.57*pi/180.0, -69.32*pi/180.0, 129.76*pi/180.0, -150.44*pi/180.0, -90.68*pi/180.0, 61.97*pi/180.0]
+Q23 = [149.04*pi/180.0, -77.07*pi/180.0, 127.36*pi/180.0, -140.29*pi/180.0, -90.65*pi/180.0, 62.4*pi/180.0]
 
 # Hanoi tower location 3
-Q31 = [195.42*pi/180.0, -48.02*pi/180.0, 95.93*pi/180.0, -131.92*pi/180.0, -86.87*pi/180.0, 96.22*pi/180.0]
-Q32 = [195.44*pi/180.0, -53.6*pi/180.0, 99.01*pi/180.0, -133.71*pi/180.0, -86.7*pi/180.0, 96.22*pi/180.0]
-Q33 = [195.56*pi/180.0, -58.51*pi/180.0, 129.92*pi/180.0, -129.92*pi/180.0, -86.97*pi/180.0, 96.22*pi/180.0]
+Q31 = [168.07*pi/180.0, -59.58*pi/180.0, 129.19*pi/180.0, -159.31*pi/180.0, -90.68*pi/180.0, 81.52*pi/180.0]
+Q32 = [168.09*pi/180.0, -68.28*pi/180.0, 128.02*pi/180.0, -149.44*pi/180.0, -90.63*pi/180.0, 81.5*pi/180.0]
+Q33 = [168.11*pi/180.0, -75.84*pi/180.0, 125.53*pi/180.0, -139.38*pi/180.0, -90.59*pi/180.0, 81.47*pi/180.0]
 
 
 thetas = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -71,6 +72,8 @@ Whenever ur3/gripper_input publishes info this callback function is called.
 """
 
 def suction_callback(msg):
+    global digital_in_0
+    digital_in_0 = msg.DIGIN
     pass
 
 
@@ -195,18 +198,23 @@ def move_arm(pub_cmd, loop_rate, dest, vel, accel):
 
 def move_block(pub_cmd, loop_rate, start_loc, start_height, \
                end_loc, end_height):
-    global Q
+    global Q, digital_in_0
 
     ### Hint: Use the Q array to map out your towers by location and "height".
 
 
     start_point = Q[start_loc][start_height-1]
     end_point = Q[end_loc][end_height-1]
-    move_arm(pub_cmd, loop_rate, start_point, 4.0, 4.0)
-    gripper(pub_cmd,loop_rate,1)
-    move_arm(pub_cmd, loop_rate, home, 4.0, 4.0)
-    move_arm(pub_cmd, loop_rate, end_point, 4.0, 4.0)
-    gripper(pub_cmd, loop_rate, 0)
+    move_arm(pub_cmd, loop_rate, start_point, 4.0, 1)
+    gripper(pub_cmd,loop_rate,suction_on)
+    time.sleep(0.5)
+    if digital_in_0 == 0:
+         move_arm(pub_cmd, loop_rate, home, 4.0, 1)
+         raise RuntimeError("Missing block")
+    move_arm(pub_cmd, loop_rate, home, 4.0, 1)
+    move_arm(pub_cmd, loop_rate, end_point, 4.0, 1)
+    gripper(pub_cmd, loop_rate, suction_off)
+    move_arm(pub_cmd, loop_rate, home, 4.0, 1)
 
     error = 0
 
@@ -216,10 +224,117 @@ def move_block(pub_cmd, loop_rate, start_loc, start_height, \
 
 
 ############### Your Code End Here ###############
+block_count = [0,0,0]
 
+
+def TowerOfHanoi(n, from_rod, to_rod, aux_rod, pub_command, loop_rate):
+    global block_count
+    if n == 0:
+        return
+    TowerOfHanoi(n-1, from_rod, aux_rod, to_rod, pub_command, loop_rate)
+    
+    block_count[to_rod] += 1
+    start_height = block_count[from_rod] if block_count[from_rod] > 0 else 1
+    end_height = block_count[to_rod] if block_count[to_rod] > 0 else 1
+    # suction detection goes here
+    move_block(pub_command, loop_rate, from_rod, start_height, to_rod, end_height)
+
+    block_count[from_rod] -= 1
+    print("height", start_height, end_height)
+    print("block_count", block_count)
+    
+    print("Move disk", n, "from rod", from_rod, "to rod", to_rod)
+    TowerOfHanoi(n-1, aux_rod, to_rod, from_rod, pub_command, loop_rate)
+ 
+ 
 
 def main():
 
+    global home
+    global Q
+    global SPIN_RATE
+    global block_count
+
+    # Initialize ROS node
+    rospy.init_node('lab2node')
+
+    # Initialize publisher for ur3/command with buffer size of 10
+    pub_command = rospy.Publisher('ur3/command', command, queue_size=10)
+
+    # Initialize subscriber to ur3/position and callback fuction
+    # each time data is published
+    sub_position = rospy.Subscriber('ur3/position', position, position_callback)
+
+    ############## Your Code Start Here ##############
+    # TODO: define a ROS subscriber for ur3/gripper_input message and corresponding callback function
+
+    sub_suction = rospy.Subscriber('ur3/gripper_input', gripper_input, suction_callback)
+    ############### Your Code End Here ###############
+
+
+    ############## Your Code Start Here ##############
+    # TODO: modify the code below so that program can get user input
+
+
+    start_pos = int(input("Enter number of starting pos <Either 1 2 3 or 0 to quit> "))
+    end_pos = int(input("Enter number of ending pos <Either 1 2 3 or 0 to quit> "))
+
+
+
+    ############### Your Code End Here ###############
+
+    # Check if ROS is ready for operation
+    while(rospy.is_shutdown()):
+        print("ROS is shutdown!")
+
+    rospy.loginfo("Sending Goals ...")
+
+    loop_rate = rospy.Rate(SPIN_RATE)
+
+    ############## Your Code Start Here ##############
+    # TODO: modify the code so that UR3 can move tower accordingly from user input
+
+
+
+    # Driver code
+    N = 3
+    aux_pos = 5 - start_pos - end_pos
+    block_count[start_pos-1]=3
+    
+    # A, C, B are the name of rods
+    TowerOfHanoi(N, start_pos-1, end_pos-1, aux_pos,pub_command, loop_rate)
+
+
+
+    # while(loop_count > 0):
+
+    #     move_arm(pub_command, loop_rate, home, 4.0, 4.0)
+
+    #     rospy.loginfo("Sending goal 1 ...")
+    #     move_arm(pub_command, loop_rate, Q[0][0], 4.0, 4.0)
+
+    #     gripper(pub_command, loop_rate, suction_on)
+    #     # Delay to make sure suction cup has grasped the block
+    #     time.sleep(1.0)
+
+    #     rospy.loginfo("Sending goal 2 ...")
+    #     move_arm(pub_command, loop_rate, Q[1][1], 4.0, 4.0)
+
+    #     rospy.loginfo("Sending goal 3 ...")
+    #     move_arm(pub_command, loop_rate, Q[2][0], 4.0, 4.0)
+
+    #     loop_count = loop_count - 1
+
+    # gripper(pub_command, loop_rate, suction_off)
+
+
+
+
+
+    ############### Your Code End Here ###############
+
+
+def test():
     global home
     global Q
     global SPIN_RATE
@@ -245,31 +360,8 @@ def main():
     # TODO: modify the code below so that program can get user input
 
 
-    start_pos = input("Enter number of starting pos <Either 1 2 3 or 0 to quit> ")
-    end_pos = input("Enter number of ending pos <Either 1 2 3 or 0 to quit> ")
-    # input_done = 0
-    # loop_count = 0
-
-    # while(not input_done):
-        
-    #     print("You entered " + input_string + "\n")
-
-    #     if(int(input_string) == 1):
-    #         input_done = 1
-    #         loop_count = 1
-    #     elif (int(input_string) == 2):
-    #         input_done = 1
-    #         loop_count = 2
-    #     elif (int(input_string) == 3):
-    #         input_done = 1
-    #         loop_count = 3
-    #     elif (int(input_string) == 0):
-    #         print("Quitting... ")
-    #         sys.exit()
-    #     else:
-    #         print("Please just enter the character 1 2 3 or 0 to quit \n\n")
-
-
+    start_pos = int(input("Enter number of starting pos <Either 1 2 3 or 0 to quit> "))
+    end_pos = int(input("Enter number of ending pos <Either 1 2 3 or 0 to quit> "))
 
 
 
@@ -285,48 +377,7 @@ def main():
 
     ############## Your Code Start Here ##############
     # TODO: modify the code so that UR3 can move tower accordingly from user input
-    move_block(pub_command, loop_rate, start_pos, 3, end_pos, 1)
-
-    # while(loop_count > 0):
-
-    #     move_arm(pub_command, loop_rate, home, 4.0, 4.0)
-
-    #     rospy.loginfo("Sending goal 1 ...")
-    #     move_arm(pub_command, loop_rate, Q[0][0], 4.0, 4.0)
-
-    #     gripper(pub_command, loop_rate, suction_on)
-    #     # Delay to make sure suction cup has grasped the block
-    #     time.sleep(1.0)
-
-    #     rospy.loginfo("Sending goal 2 ...")
-    #     move_arm(pub_command, loop_rate, Q[1][1], 4.0, 4.0)
-
-    #     rospy.loginfo("Sending goal 3 ...")
-    #     move_arm(pub_command, loop_rate, Q[2][0], 4.0, 4.0)
-
-    #     loop_count = loop_count - 1
-
-    # gripper(pub_command, loop_rate, suction_off)
-
-
-
-def TowerOfHanoi(n, from_rod, to_rod, aux_rod):
-    if n == 0:
-        return
-    TowerOfHanoi(n-1, from_rod, aux_rod, to_rod)
-    print("Move disk", n, "from rod", from_rod, "to rod", to_rod)
-    TowerOfHanoi(n-1, aux_rod, to_rod, from_rod)
- 
- 
-# Driver code
-N = 3
- 
-# A, C, B are the name of rods
-TowerOfHanoi(N, 'A', 'C', 'B')
-
-
-
-    ############### Your Code End Here ###############
+    move_arm(pub_command, loop_rate, Q[start_pos-1][end_pos-1], 4, 1)
 
 
 if __name__ == '__main__':
@@ -336,3 +387,5 @@ if __name__ == '__main__':
     # When Ctrl+C is executed, it catches the exception
     except rospy.ROSInterruptException:
         pass
+    except RuntimeError as e:
+        print(e)
