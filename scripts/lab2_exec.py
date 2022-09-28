@@ -202,7 +202,10 @@ def move_block(pub_cmd, loop_rate, start_loc, start_height, \
 
     ### Hint: Use the Q array to map out your towers by location and "height".
 
-#
+#  start and end indexed by Q, user input prompts start and end locations
+# move arm goes to moves to a set of angles which is a point the block is located at
+# move block moves from any starting location on one tower to the ending location on another tower
+#to program for these purposes, we would need to do 7 move blocks, 6 times-one time for each set of tower combinations
     start_point = Q[start_loc][start_height-1]
     end_point = Q[end_loc][end_height-1]
     move_arm(pub_cmd, loop_rate, start_point, 4.0, 1)
@@ -232,7 +235,7 @@ def TowerOfHanoi(n, from_rod, to_rod, aux_rod, pub_command, loop_rate):
     if n == 0:
         return
     TowerOfHanoi(n-1, from_rod, aux_rod, to_rod, pub_command, loop_rate)
-    
+    #n/N - blocks left to move
     block_count[to_rod] += 1
     start_height = block_count[from_rod] if block_count[from_rod] > 0 else 1
     end_height = block_count[to_rod] if block_count[to_rod] > 0 else 1
@@ -304,7 +307,7 @@ def main():
     # A, C, B are the name of rods
     TowerOfHanoi(N, start_pos-1, end_pos-1, aux_pos,pub_command, loop_rate)
 
-
+#N - height
 
     # while(loop_count > 0):
 
