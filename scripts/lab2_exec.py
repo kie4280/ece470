@@ -75,7 +75,7 @@ def suction_callback(msg):
     global digital_in_0
     digital_in_0 = msg.DIGIN
     pass
-
+#global makes it so that the variable can be used anywhere in the program
 
 
 ############### Your Code End Here ###############
@@ -202,7 +202,7 @@ def move_block(pub_cmd, loop_rate, start_loc, start_height, \
 
     ### Hint: Use the Q array to map out your towers by location and "height".
 
-
+#
     start_point = Q[start_loc][start_height-1]
     end_point = Q[end_loc][end_height-1]
     move_arm(pub_cmd, loop_rate, start_point, 4.0, 1)
